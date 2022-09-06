@@ -1,25 +1,27 @@
-FROM centos:7
+FROM alpine as build
 
-MAINTAINER linuxtechlab
+ARG MAVEN_VERSION=3.6.3
+ARG USER_HOME_DIR="/root"
+ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
 
-LABEL Remarks="This is a dockerfile example for Centos system"
 
-RUN yum -y update && \
+# Install Java.
+RUN apk --update --no-cache add openjdk7 curl
 
-yum -y install httpd && \
+RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
+ && curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
+ && tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 \
+ && rm -f /tmp/apache-maven.tar.gz \
+ && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
-yum clean all
+ENV MAVEN_HOME /usr/share/maven
+ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
 
-COPY data/httpd.conf /etc/httpd/conf/httpd.conf
+# Define working directory.
+WORKDIR /data
 
-ADD data/html.tar.gz /var/www/html/
+# Define commonly used JAVA_HOME variable
+ENV JAVA_HOME /usr/lib/jvm/default-jvm/
 
-EXPOSE 80
-
-ENV HOME /root
-
-WORKDIR /root
-
-ENTRYPOINT ["ping"]
-
-CMD ["google.com"]
+# Define default command.
+CMD ["mvn", "--version"]
